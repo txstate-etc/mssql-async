@@ -69,7 +69,10 @@ const success = await db.execute('CREATE TABLE anothertable ...')
 Named parameters are a little cumbersome with array operations, so we provide a helper:
 ```javascript
 const params = { age: 30 }
-const rows = await db.getall(`SELECT name FROM mytable WHERE age > @age AND name IN (${db.in(params, ['John', 'Mike'])})`, params)
+const rows = await db.getall(`
+  SELECT name FROM mytable
+  WHERE age > @age AND name IN (${db.in(params, ['John', 'Mike'])})
+`, params)
 ```
 ## Raw Query
 If the convenience methods are hiding something you need from mssql, you can use .query() to get
@@ -130,17 +133,9 @@ await db.transaction(async db => {
 }) // the INSERT will be rolled back and will not happen
 ```
 ## Prepared Statements
-Prepared statements are nearly automatic, you just need to notate which queries need it. It's desirable to
-carefully pick a few complicated queries because each unique SQL string that uses prepared statement support
-will use up a small amount of resources on both client and server.
-```javascript
-await db.getrow('SELECT m.*, o.* FROM mytable m, othertable o WHERE ...complicated...',
-  [ /* bind parameters */ ],
-  { saveAsPrepared: true }
-)
-```
-Now, future calls with this same SQL statement (before inserting bound parameters) will be able to skip the
-query planning stage on the mysql server and return data a little bit faster.
+Support for prepared statements in the `mssql` library is extremely limited, as preparing a statement consumes
+a connection until you unprepare it. The feature isn't worth the trouble, but if you're sure you need it, you
+can access the raw `ConnectionPool` object with `await db.pool()` and follow the `mssql` documentation.
 
 ## Timezones
 Working with timezones can be very confusing. Unfortunately there's nothing this library can do to help except

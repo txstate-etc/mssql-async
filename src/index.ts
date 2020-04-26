@@ -2,8 +2,8 @@ import mssql, { ConnectionPool, Transaction } from 'mssql'
 import { Readable } from 'stream'
 
 export interface QueryOptions {
+  /* currently does nothing, prepared statements in mssql are extremely limited */
   saveAsPrepared?: boolean
-  rowsAsArray?: boolean
 }
 
 export interface StreamOptions extends QueryOptions {
@@ -185,6 +185,11 @@ export default class Db extends Queryable {
         await new Promise(resolve => setTimeout(resolve, 2000))
       }
     }
+  }
+
+  async rawpool () {
+    await this.connectpromise
+    return this.pool
   }
 
   async transaction (callback: (db: Queryable) => Promise<void>) {
