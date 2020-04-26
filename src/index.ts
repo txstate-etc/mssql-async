@@ -181,7 +181,7 @@ export default class Db extends Queryable {
         if (errorcount > 2) console.error(error.message)
         errorcount++
         // sleep and try again
-        console.log('Unable to connect to MSSQL database, trying again in 2 seconds.')
+        if (errorcount > 1) console.log('Unable to connect to MSSQL database, trying again in 2 seconds.')
         await new Promise(resolve => setTimeout(resolve, 2000))
       }
     }
