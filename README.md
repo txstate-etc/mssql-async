@@ -135,7 +135,7 @@ await db.transaction(async db => {
 ## Prepared Statements
 Support for prepared statements in the `mssql` library is extremely limited, as preparing a statement consumes
 a connection until you unprepare it. The feature isn't worth the trouble, but if you're sure you need it, you
-can access the raw `ConnectionPool` object with `await db.pool()` and follow the `mssql` documentation.
+can access the raw `ConnectionPool` object with `await db.rawpool()` and follow the `mssql` documentation.
 
 ## Timezones
 Working with timezones can be very confusing. Unfortunately there's nothing this library can do to help except
