@@ -1,0 +1,55 @@
+{
+  "name": "mssql-async",
+  "version": "1.0.0",
+  "description": "A wrapper for mssql for added convenience when working with async/await and inside docker containers.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "prepublishOnly": "echo 'Must use command npm run pub' && exit 1",
+    "build": "rm -rf ./lib && tsc",
+    "mocha": "mocha -r ts-node/register test/**/*.ts --exit",
+    "test": "./test.sh",
+    "pub": "npm run build && cp package.json ./lib/ && cp README.md ./lib/ && cp LICENSE ./lib/ && cd ./lib && npm publish --ignore-scripts"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.2.11",
+    "@types/chai-as-promised": "^7.1.0",
+    "@types/mocha": "^7.0.2",
+    "@types/node": "^12.12.2",
+    "@typescript-eslint/eslint-plugin": "^2.24.0",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "eslint": "^6.7.1",
+    "eslint-config-standard-with-typescript": "^15.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-node": "^10.0.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "mocha": "^7.1.1",
+    "ts-node": "^8.7.0",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "@types/mssql": "^6.0.0",
+    "mssql": "^6.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/txstate-etc/mssql-async.git"
+  },
+  "keywords": [
+    "mssql",
+    "await",
+    "async"
+  ],
+  "author": "Nick Wing",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/txstate-etc/mssql-async/issues"
+  },
+  "homepage": "https://github.com/txstate-etc/mssql-async#readme",
+  "files": [
+    "*.js",
+    "*.d.ts"
+  ]
+}

@@ -1,0 +1,17 @@
+version: '3'
+services:
+  mssql-async:
+    build:
+      context: .
+    environment:
+      TZ: America/Chicago
+    depends_on:
+      - mssql
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    logging:
+      driver: none
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: Secret123
+      TZ: America/Los_Angeles

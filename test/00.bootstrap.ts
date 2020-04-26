@@ -1,0 +1,24 @@
+/* global before */
+import Db from '../src'
+import chai from 'chai'
+import chaiAsPromised from 'chai-as-promised'
+chai.use(chaiAsPromised)
+
+before(async function () {
+  // on first run, mariadb needs a long time to set up the data volume
+  this.timeout(100000)
+  const db = new Db({
+    database: ''
+  })
+  await db.wait()
+  await db.execute(`
+  IF NOT EXISTS
+  (
+    SELECT name FROM master.dbo.sysdatabases
+    WHERE name = N'default_database'
+  )
+  CREATE DATABASE default_database`)
+  await db.execute('USE default_database')
+  await db.execute('DROP TABLE IF EXISTS test')
+  await db.execute('DROP TABLE IF EXISTS test2')
+})
