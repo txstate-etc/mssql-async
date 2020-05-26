@@ -151,6 +151,10 @@ export default class Db extends Queryable {
     const domain = config?.domain ?? process.env.MSSQL_DOMAIN ?? process.env.DB_DOMAIN
     const pool = new ConnectionPool({
       ...config,
+      options: {
+        ...(config?.options),
+        enableArithAbort: true
+      },
       server: config?.server ?? process.env.MSSQL_HOST ?? process.env.DB_HOST ?? 'mssql',
       ...(domain ? { domain } : {}),
       user: config?.user ?? process.env.MSSQL_USER ?? process.env.DB_USER ?? 'sa',
