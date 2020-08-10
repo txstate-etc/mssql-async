@@ -47,6 +47,12 @@ describe('basic tests', () => {
     expect(name).to.equal('name 3')
   })
 
+  it('should be able to select a single column in multiple rows', async () => {
+    const names = await db.getvals<string>('SELECT name FROM test')
+    expect(names[3]).to.equal('name 3')
+    expect(names).to.have.lengthOf(1000)
+  })
+
   it('should be able to update a row', async () => {
     const rows = await db.update('UPDATE test SET name=@newname WHERE name=@existing', { newname: 'name 1002', existing: 'name 999' })
     expect(rows).to.equal(1)

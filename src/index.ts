@@ -57,6 +57,11 @@ export class Queryable {
     if (row) return Object.values(row)[0]
   }
 
+  async getvals<ReturnType = ColTypes> (sql: string, binds?: BindInput, options?: QueryOptions) {
+    const rows = await this.getall<[ReturnType]>(sql, binds, options)
+    return rows.map(r => Object.values(r)[0])
+  }
+
   async getrow<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: QueryOptions) {
     const results = await this.getall<ReturnType>(sql, binds, options)
     if (results?.length > 0) return results?.[0]

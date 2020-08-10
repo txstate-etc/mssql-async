@@ -58,6 +58,9 @@ const row = await db.getrow('SELECT name FROM mytable WHERE name=@name', { name:
 console.log(row) // { name: 'John' }
 const name = await db.getval('SELECT name FROM mytable WHERE name=@name', { name: 'John' })
 console.log(name) // John
+const names = await db.getvals('SELECT name FROM mytable WHERE name IN (@name1, @name2)',
+  { name1: 'John', name2: 'Maria' })
+console.log(names) // ['John', 'Maria']
 ```
 ## Mutating
 ```javascript
