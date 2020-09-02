@@ -11,7 +11,7 @@ export interface StreamOptions extends QueryOptions {
 }
 
 interface canBeStringed {
-  toString(): string
+  toString: () => string
 }
 interface BindObject { [keys: string]: BindParam }
 type BindParam = boolean|number|string|null|Date|Buffer|canBeStringed|BindObject
@@ -20,7 +20,7 @@ interface DefaultReturnType { [keys: string]: ColTypes }
 type BindInput = BindObject
 
 interface GenericReadable<T> extends Readable {
-  [Symbol.asyncIterator](): AsyncIterableIterator<T>
+  [Symbol.asyncIterator]: () => AsyncIterableIterator<T>
 }
 
 export class Queryable {
