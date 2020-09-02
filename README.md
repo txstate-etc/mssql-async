@@ -127,7 +127,9 @@ A method is provided to support working inside a transaction. Since the core Db 
 cannot send transaction commands without this method, as each command would end up on a different connection.
 
 To start a transaction, provide a callback that MUST return a promise (just make it async). A new instance of
-`db` is provided to the callback; it represents a single connection, inside a transaction. You do NOT send
+`db` is provided to the callback; it represents a single connection, inside a transaction. Remember to pass this along to any other functions you call during the transaction - __if you call a function that uses the global `db` object its work will happen outside the transaction!__
+
+You do NOT send
 `START TRANSACTION`, `ROLLBACK`, or `COMMIT` as these are handled automatically.
 ```javascript
 await db.transaction(async db => {
@@ -144,6 +146,15 @@ await db.transaction(async db => {
   throw new Error('oops!')
 }) // the INSERT will be rolled back and will not happen
 ```
+### Retrying Deadlocks
+`db.transaction()` accepts an `options` parameter allowing you to set a maximum number of retries allowed upon deadlock:
+```javascript
+await db.transaction(async db => {
+  const row = await db.getrow('SELECT * FROM ...')
+  await db.update('UPDATE mytable SET ...')
+}, { retries: 1 })
+```
+If this transaction is the loser of a deadlock, it will retry the whole transaction once, including refetching the `getrow` statement.
 ## Prepared Statements
 Support for prepared statements in the `mssql` library is extremely limited, as preparing a statement consumes
 a connection until you unprepare it. The feature isn't worth the trouble, but if you're sure you need it, you
