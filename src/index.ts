@@ -44,12 +44,7 @@ export class Queryable {
   async query<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: QueryOptions) {
     await this.connectpromise
     const req = this.request(sql, binds, options)
-    try {
-      return await req.query<ReturnType>(sql)
-    } catch (e) {
-      console.error(sql)
-      throw e
-    }
+    return req.query<ReturnType>(sql)
   }
 
   async getval<ReturnType = ColTypes> (sql: string, binds?: BindInput, options?: QueryOptions) {
@@ -201,17 +196,23 @@ export default class Db extends Queryable {
     return this.pool
   }
 
-  async transaction (callback: (db: Queryable) => Promise<void>) {
+  async transaction <ReturnType> (callback: (db: Queryable) => Promise<ReturnType>, options?: { retries?: number }): Promise<ReturnType> {
     await this.wait()
     const transaction = this.pool.transaction()
     const db = new Queryable(transaction, this.connectpromise)
     await transaction.begin()
     try {
-      await callback(db)
+      const ret = await callback(db)
       await transaction.commit()
+      return ret
     } catch (e) {
-      await transaction.rollback()
-      throw e
+      if (e.number === 1205 && options?.retries) { // deadlock
+        return await this.transaction(callback, { ...options, retries: options.retries - 1 })
+      } else {
+        // rollback unnecessary on deadlock, in fact it throws a new error, which is problematic
+        if (e.number !== 1205) await transaction.rollback()
+        throw e
+      }
     }
   }
 }

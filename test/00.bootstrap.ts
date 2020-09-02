@@ -8,7 +8,8 @@ before(async function () {
   // on first run, mssql needs a long time to set up the data volume
   this.timeout(100000)
   const db = new Db({
-    database: ''
+    database: '',
+    pool: { max: 10 }
   })
   await db.wait()
   await db.execute(`

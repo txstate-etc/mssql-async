@@ -19,12 +19,22 @@ describe('basic tests', () => {
     ])
     const dbs = await db.getall('select * from sys.tables')
     expect(dbs?.length).to.be.greaterThan(0)
-  })
+  }).timeout(5000)
 
   it('should be able to add test data', async () => {
     const promises = []
     for (let i = 0; i < 1000; i++) {
       promises.push(db.insert('INSERT INTO test (name, modified) VALUES (@name, GETUTCDATE())', { name: `name ${i}` }))
+    }
+    const ids = await Promise.all(promises)
+    expect(ids?.length).to.equal(1000)
+    expect(ids[0]).to.be.a('number')
+  })
+
+  it('should be able to add more test data', async () => {
+    const promises = []
+    for (let i = 0; i < 1000; i++) {
+      promises.push(db.insert('INSERT INTO test2 (name, modified) VALUES (@name, GETUTCDATE())', { name: `name ${i}` }))
     }
     const ids = await Promise.all(promises)
     expect(ids?.length).to.equal(1000)
@@ -48,9 +58,9 @@ describe('basic tests', () => {
   })
 
   it('should be able to select a single column in multiple rows', async () => {
-    const names = await db.getvals<string>('SELECT name FROM test')
-    expect(names[3]).to.equal('name 3')
-    expect(names).to.have.lengthOf(1000)
+    const names = await db.getvals<string>('SELECT TOP 5 name FROM test ORDER BY name')
+    expect(names[3]).to.equal('name 100')
+    expect(names).to.have.lengthOf(5)
   })
 
   it('should be able to update a row', async () => {

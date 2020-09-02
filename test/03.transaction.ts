@@ -93,4 +93,11 @@ describe('transaction tests', () => {
     // getting this far means things are working
     expect(true).to.be.true
   })
+
+  it('should transmit a return value', async () => {
+    const val = await db.transaction(async db => {
+      return db.getval<string>('SELECT name FROM test WHERE name=@name', { name: 'name 400' })
+    })
+    expect(val).to.equal('name 400')
+  })
 })
