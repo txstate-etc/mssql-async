@@ -19,8 +19,13 @@ type ColTypes = BindParam
 interface DefaultReturnType { [keys: string]: ColTypes }
 type BindInput = BindObject
 
+interface StreamIterator <ReturnType> {
+  [Symbol.asyncIterator]: () => StreamIterator<ReturnType>
+  next: () => Promise<{ done: boolean, value: ReturnType }>
+}
+
 interface GenericReadable<T> extends Readable {
-  [Symbol.asyncIterator]: () => AsyncIterableIterator<T>
+  [Symbol.asyncIterator]: () => StreamIterator<T>
 }
 
 export class Queryable {
@@ -127,8 +132,8 @@ export class Queryable {
     return stream
   }
 
-  iterator<ReturnType = DefaultReturnType> (sql: string, options: StreamOptions): AsyncIterableIterator<DefaultReturnType>
-  iterator<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: StreamOptions): AsyncIterableIterator<DefaultReturnType>
+  iterator<ReturnType = DefaultReturnType> (sql: string, options: StreamOptions): StreamIterator<DefaultReturnType>
+  iterator<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: StreamOptions): StreamIterator<DefaultReturnType>
   iterator<ReturnType = DefaultReturnType> (sql: string, bindsOrOptions: any, options?: StreamOptions) {
     const ret = this.stream<ReturnType>(sql, bindsOrOptions, options)[Symbol.asyncIterator]()
     return ret
