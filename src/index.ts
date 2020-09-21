@@ -31,11 +31,9 @@ interface GenericReadable<T> extends Readable {
 
 export class Queryable {
   protected conn: ConnectionPool | Transaction
-  protected connectpromise!: Promise<void>
 
   constructor (conn: ConnectionPool | Transaction, connectpromise?: Promise<void>) {
     this.conn = conn
-    if (connectpromise) this.connectpromise = connectpromise
   }
 
   request (sql: string, binds?: BindInput, options?: QueryOptions) {
@@ -48,7 +46,6 @@ export class Queryable {
   }
 
   async query<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: QueryOptions) {
-    await this.connectpromise
     const req = this.request(sql, binds, options)
     return await req.query<ReturnType>(sql)
   }
@@ -87,21 +84,13 @@ export class Queryable {
     return await this.getval<number>(sql + '; SELECT SCOPE_IDENTITY() AS id', binds, options) as number
   }
 
-  stream<ReturnType = DefaultReturnType> (sql: string, options: StreamOptions): GenericReadable<ReturnType>
-  stream<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: StreamOptions): GenericReadable<ReturnType>
-  stream<ReturnType = DefaultReturnType> (sql: string, bindsOrOptions: any, options?: StreamOptions) {
-    let binds
-    if (!options && (bindsOrOptions?.highWaterMark || bindsOrOptions?.objectMode)) {
-      options = bindsOrOptions
-      binds = []
-    } else {
-      binds = bindsOrOptions
-    }
+  protected feedStream<ReturnType> (stream: GenericReadable<ReturnType>, sql: string, binds: BindInput, options: QueryOptions = {}) {
+    if (stream.destroyed) return
+
     const req = this.request(sql, binds, options)
     req.stream = true
 
     let canceled = false
-    const stream = new Readable({ ...options, objectMode: true }) as GenericReadable<ReturnType>
     stream._read = () => {
       req.resume()
     }
@@ -126,10 +115,39 @@ export class Queryable {
       stream.push(null)
     })
 
-    this.connectpromise.then(async () => {
-      await req.query(sql)
-    }).catch(e => {})
+    req.query(sql).catch(e => {
+      stream.emit('error', e)
+    })
+  }
 
+  protected handleStreamOptions<ReturnType> (sql: string, bindsOrOptions: any, options?: StreamOptions) {
+    let binds
+    if (!options && (bindsOrOptions?.highWaterMark || bindsOrOptions?.objectMode)) {
+      options = bindsOrOptions
+      binds = []
+    } else {
+      binds = bindsOrOptions
+    }
+    const queryOptions = {
+      saveAsPrepared: options?.saveAsPrepared
+    }
+    const streamOptions = {
+      highWaterMark: options?.highWaterMark
+    }
+    const stream = new Readable({ ...streamOptions, objectMode: true }) as GenericReadable<ReturnType>
+    stream._read = () => {}
+    stream._destroy = (err: Error, cb) => {
+      if (err) stream.emit('error', err)
+      cb()
+    }
+    return { binds, queryOptions, stream }
+  }
+
+  stream<ReturnType = DefaultReturnType> (sql: string, options: StreamOptions): GenericReadable<ReturnType>
+  stream<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: StreamOptions): GenericReadable<ReturnType>
+  stream<ReturnType = DefaultReturnType> (sql: string, bindsOrOptions: any, options?: StreamOptions) {
+    const { binds, queryOptions, stream } = this.handleStreamOptions<ReturnType>(sql, bindsOrOptions, options)
+    this.feedStream(stream, sql, binds, queryOptions)
     return stream
   }
 
@@ -151,6 +169,7 @@ export class Queryable {
 
 export default class Db extends Queryable {
   protected pool: ConnectionPool
+  protected connectpromise!: Promise<void>
 
   constructor (config?: Partial<mssql.config>) {
     const poolSizeString = process.env.MSSQL_POOL_SIZE ?? process.env.DB_POOL_SIZE
@@ -174,11 +193,6 @@ export default class Db extends Queryable {
     })
     super(pool)
     this.pool = pool
-    this.connectpromise = this.connect()
-  }
-
-  async wait () {
-    return this.connectpromise
   }
 
   async connect () {
@@ -198,14 +212,34 @@ export default class Db extends Queryable {
   }
 
   async rawpool () {
-    await this.connectpromise
+    await this.wait()
     return this.pool
+  }
+
+  async wait () {
+    if (typeof this.connectpromise === 'undefined') this.connectpromise = this.connect()
+    return await this.connectpromise
+  }
+
+  async query<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: QueryOptions) {
+    await this.wait()
+    return await super.query<ReturnType>(sql, binds, options)
+  }
+
+  stream<ReturnType = DefaultReturnType> (sql: string, options: StreamOptions): GenericReadable<ReturnType>
+  stream<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: StreamOptions): GenericReadable<ReturnType>
+  stream<ReturnType = DefaultReturnType> (sql: string, bindsOrOptions: any, options?: StreamOptions) {
+    const { binds, queryOptions, stream } = this.handleStreamOptions<ReturnType>(sql, bindsOrOptions, options)
+    this.wait().then(() => {
+      this.feedStream(stream, sql, binds, queryOptions)
+    }).catch(e => stream.emit('error', e))
+    return stream
   }
 
   async transaction <ReturnType> (callback: (db: Queryable) => Promise<ReturnType>, options?: { retries?: number }): Promise<ReturnType> {
     await this.wait()
     const transaction = this.pool.transaction()
-    const db = new Queryable(transaction, this.connectpromise)
+    const db = new Queryable(transaction)
     await transaction.begin()
     try {
       const ret = await callback(db)
