@@ -22,6 +22,7 @@ type BindInput = BindObject
 interface StreamIterator <ReturnType> {
   [Symbol.asyncIterator]: () => StreamIterator<ReturnType>
   next: () => Promise<{ done: boolean, value: ReturnType }>
+  return: () => Promise<{ done: boolean, value: ReturnType }>
 }
 
 interface GenericReadable<T> extends Readable {

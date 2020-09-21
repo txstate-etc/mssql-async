@@ -18,4 +18,57 @@ describe('iterator tests', () => {
     }
     expect(count).to.equal(1001)
   })
+  it('should throw an error on the first iterator.next() if the query errors', async () => {
+    const iter = db.iterator('SELECT blah FROM test')
+    try {
+      await iter.next()
+      expect(true).to.be.false('next() should have errored')
+    } catch (e) {
+      expect(e.code).to.equal('EREQUEST')
+    }
+  })
+  it('should properly release connections back to the pool with iterator syntax', async () => {
+    for (let i = 0; i < 15; i++) {
+      const iterator = db.iterator('SELECT TOP 100 * FROM test')
+      while (true) {
+        const { done, value: row } = await iterator.next()
+        if (done) break
+        expect(row?.name).to.match(/name \d+/)
+      }
+    }
+    // if iterators eat connections then it will hang indefinitely after 10 transactions
+    // getting this far means things are working
+    expect(true).to.be.true
+  })
+  it('should properly release connections back to the pool if an iterator errors', async () => {
+    for (let i = 0; i < 15; i++) {
+      try {
+        const iterator = db.iterator('SELECT blah FROM test')
+        while (true) {
+          const { done, value: row } = await iterator.next()
+          if (done) break
+        }
+      } catch (e) {
+        // do nothing
+      }
+    }
+    // if iterators eat connections then it will hang indefinitely after 10 transactions
+    // getting this far means things are working
+    expect(true).to.be.true
+  })
+  it('should properly release connections back to the pool if an iterator stops processing', async () => {
+    for (let i = 0; i < 15; i++) {
+      const iterator = db.iterator('SELECT TOP 100 * FROM test')
+      let loopcount = 0
+      for (let { done, value: row } = await iterator.next(); !done; { done, value: row } = await iterator.next()) {
+        loopcount++
+        expect(row?.name).to.match(/name \d+/)
+        await iterator.return()
+      }
+      expect(loopcount).to.equal(1)
+    }
+    // if canceled iterators eat connections then it will hang indefinitely after 10 transactions
+    // getting this far means things are working
+    expect(true).to.be.true
+  })
 })

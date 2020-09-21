@@ -2,6 +2,7 @@
 /* global describe, it */
 import { expect } from 'chai'
 import db from '../src/db'
+import Db from '../src/index'
 
 describe('streaming tests', () => {
   it('should be able to stream a row at a time', async () => {
@@ -10,18 +11,6 @@ describe('streaming tests', () => {
     for await (const row of stream) {
       count++
       expect(row?.name).to.match(/^name \d+/)
-    }
-    expect(count).to.equal(1000)
-  })
-
-  it('should be able to stream with the iterator syntax', async () => {
-    const iterator = db.iterator<{ name: string }>('SELECT * FROM test')
-    let count = 0
-    while (true) {
-      const { value: row, done } = await iterator.next()
-      if (done) break
-      count++
-      expect(row.name).to.match(/^name \d+/)
     }
     expect(count).to.equal(1000)
   })
@@ -36,24 +25,22 @@ describe('streaming tests', () => {
     expect(count).to.equal(1000)
   })
 
+  it('should put an error on the stream if the query errors', async () => {
+    const stream = db.stream('SELECT blah FROM test')
+    try {
+      for await (const row of stream) {
+        // do not expect to get this far
+      }
+      expect(true).to.be.false('for await should have errored')
+    } catch (e) {
+      expect(e.code).to.equal('EREQUEST')
+    }
+  })
+
   it('should properly release connections back to the pool', async () => {
     for (let i = 0; i < 15; i++) {
       const stream = db.stream('SELECT TOP 100 * FROM test')
       for await (const row of stream) {
-        expect(row?.name).to.match(/name \d+/)
-      }
-    }
-    // if transactions eat connections then it will hang indefinitely after 10 transactions
-    // getting this far means things are working
-    expect(true).to.be.true
-  })
-
-  it('should properly release connections back to the pool with iterator syntax', async () => {
-    for (let i = 0; i < 15; i++) {
-      const iterator = db.iterator('SELECT TOP 100 * FROM test')
-      while (true) {
-        const { done, value: row } = await iterator.next()
-        if (done) break
         expect(row?.name).to.match(/name \d+/)
       }
     }
@@ -76,7 +63,7 @@ describe('streaming tests', () => {
         errorthrown = true
       }
     }
-    // if transactions eat connections then it will hang indefinitely after 10 transactions
+    // if thrown errors eat connections then it will hang indefinitely after 10 transactions
     // getting this far means things are working
     expect(errorthrown).to.be.true
   })
@@ -93,7 +80,7 @@ describe('streaming tests', () => {
         errorthrown = true
       }
     }
-    // if transactions eat connections then it will hang indefinitely after 10 transactions
+    // if syntax errors eat connections then it will hang indefinitely after 10 transactions
     // getting this far means things are working
     expect(errorthrown).to.be.true
   })
@@ -111,9 +98,41 @@ describe('streaming tests', () => {
         errorthrown = true
       }
     }
-    // if transactions eat connections then it will hang indefinitely after 10 transactions
+    // if cancellations eat connections then it will hang indefinitely after 10 transactions
     // getting this far means things are working
     expect(errorthrown).to.be.false
+  })
+
+  it('should properly release connections back to the pool when the consumer breaks a for await', async () => {
+    let errorthrown = false
+    for (let i = 0; i < 15; i++) {
+      const stream = db.stream('SELECT TOP 100 * FROM test')
+      try {
+        for await (const row of stream) {
+          expect(row?.name).to.match(/name \d+/)
+          break
+        }
+      } catch (e) {
+        errorthrown = true
+      }
+    }
+    // if cancellations eat connections then it will hang indefinitely after 10 transactions
+    // getting this far means things are working
+    expect(errorthrown).to.be.false
+  })
+
+  it('should properly release connections back to the pool when the consumer cancels the stream before the database is connected', async () => {
+    const db2 = new Db()
+    for (let i = 0; i < 15; i++) {
+      const stream = db2.stream('SELECT TOP 100 * FROM test')
+      stream.destroy()
+    }
+    const stream = db2.stream('SELECT TOP 100 * FROM test')
+    for await (const row of stream) {
+      expect(row?.name).to.match(/name \d+/)
+    }
+    // if transactions eat connections then it will hang indefinitely after 10 transactions
+    // getting this far means things are working
   })
 
   it('should properly release connections back to the pool when the consumer stops processing the stream', async () => {
@@ -132,5 +151,16 @@ describe('streaming tests', () => {
     // if transactions eat connections then it will hang indefinitely after 10 transactions
     // getting this far means things are working
     expect(errorthrown).to.be.false
+  })
+
+  it('should connect to the database when a stream is the first thing attempted', async () => {
+    const db2 = new Db()
+    const stream = db2.stream<{ name: string }>('SELECT * FROM test')
+    let count = 0
+    for await (const row of stream) {
+      count++
+      expect(row?.name).to.match(/^name \d+/)
+    }
+    expect(count).to.equal(1000)
   })
 })
