@@ -50,7 +50,7 @@ export class Queryable {
   async query<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: QueryOptions) {
     await this.connectpromise
     const req = this.request(sql, binds, options)
-    return req.query<ReturnType>(sql)
+    return await req.query<ReturnType>(sql)
   }
 
   async getval<ReturnType = ColTypes> (sql: string, binds?: BindInput, options?: QueryOptions) {
@@ -84,7 +84,7 @@ export class Queryable {
   }
 
   async insert (sql: string, binds?: BindInput, options?: QueryOptions) {
-    return this.getval<number>(sql + '; SELECT SCOPE_IDENTITY() AS id', binds, options) as Promise<number>
+    return await this.getval<number>(sql + '; SELECT SCOPE_IDENTITY() AS id', binds, options) as number
   }
 
   stream<ReturnType = DefaultReturnType> (sql: string, options: StreamOptions): GenericReadable<ReturnType>

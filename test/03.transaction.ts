@@ -96,7 +96,7 @@ describe('transaction tests', () => {
 
   it('should transmit a return value', async () => {
     const val = await db.transaction(async db => {
-      return db.getval<string>('SELECT name FROM test WHERE name=@name', { name: 'name 400' })
+      return await db.getval<string>('SELECT name FROM test WHERE name=@name', { name: 'name 400' })
     })
     expect(val).to.equal('name 400')
   })
