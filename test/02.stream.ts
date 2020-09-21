@@ -115,6 +115,7 @@ describe('streaming tests', () => {
     }
     // if transactions eat connections then it will hang indefinitely after 10 transactions
     // getting this far means things are working
+    await db2.close()
   })
 
   it('should properly release connections back to the pool when the consumer breaks a for await', async () => {
@@ -144,5 +145,6 @@ describe('streaming tests', () => {
       expect(row?.name).to.match(/^name \d+/)
     }
     expect(count).to.equal(1000)
+    await db2.close()
   })
 })

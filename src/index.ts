@@ -211,6 +211,11 @@ export default class Db extends Queryable {
     }
   }
 
+  async close () {
+    await this.wait()
+    await this.pool.close()
+  }
+
   async rawpool () {
     await this.wait()
     return this.pool
