@@ -103,24 +103,6 @@ describe('streaming tests', () => {
     expect(errorthrown).to.be.false
   })
 
-  it('should properly release connections back to the pool when the consumer breaks a for await', async () => {
-    let errorthrown = false
-    for (let i = 0; i < 15; i++) {
-      const stream = db.stream('SELECT TOP 100 * FROM test')
-      try {
-        for await (const row of stream) {
-          expect(row?.name).to.match(/name \d+/)
-          break
-        }
-      } catch (e) {
-        errorthrown = true
-      }
-    }
-    // if cancellations eat connections then it will hang indefinitely after 10 transactions
-    // getting this far means things are working
-    expect(errorthrown).to.be.false
-  })
-
   it('should properly release connections back to the pool when the consumer cancels the stream before the database is connected', async () => {
     const db2 = new Db()
     for (let i = 0; i < 15; i++) {
@@ -135,7 +117,7 @@ describe('streaming tests', () => {
     // getting this far means things are working
   })
 
-  it('should properly release connections back to the pool when the consumer stops processing the stream', async () => {
+  it('should properly release connections back to the pool when the consumer breaks a for await', async () => {
     let errorthrown = false
     for (let i = 0; i < 15; i++) {
       const stream = db.stream('SELECT TOP 100 * FROM test')
