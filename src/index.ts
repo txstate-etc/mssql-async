@@ -46,8 +46,15 @@ export class Queryable {
   }
 
   async query<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: QueryOptions) {
-    const req = this.request(sql, binds, options)
-    return await req.query<ReturnType>(sql)
+    try {
+      const req = this.request(sql, binds, options)
+      return await req.query<ReturnType>(sql)
+    } catch (e) {
+      e.clientstack = e.stack
+      e.stack = (new Error().stack ?? '')
+      Error.captureStackTrace(e, this.query)
+      throw e
+    }
   }
 
   async getval<ReturnType = ColTypes> (sql: string, binds?: BindInput, options?: QueryOptions) {
@@ -84,7 +91,7 @@ export class Queryable {
     return await this.getval<number>(sql + '; SELECT SCOPE_IDENTITY() AS id', binds, options) as number
   }
 
-  protected feedStream<ReturnType> (stream: GenericReadable<ReturnType>, sql: string, binds: BindInput, options: QueryOptions = {}) {
+  protected feedStream<ReturnType> (stream: GenericReadable<ReturnType>, sql: string, binds: BindInput, stacktrace: string|undefined, options: QueryOptions = {}) {
     if (stream.destroyed) return
 
     const req = this.request(sql, binds, options)
@@ -106,8 +113,10 @@ export class Queryable {
         req.pause()
       }
     })
-    req.on('error', err => {
+    req.on('error', (err) => {
       if (canceled) return
+      err.clientstack = err.stack
+      err.stack = (stacktrace ?? '').replace(/^Error:/, `Error: ${err.message as string ?? ''}`)
       stream.emit('error', err)
     })
     req.on('done', () => {
@@ -140,14 +149,16 @@ export class Queryable {
       if (err) stream.emit('error', err)
       cb()
     }
-    return { binds, queryOptions, stream }
+    const stacktraceError: { stack?: string } = {}
+    Error.captureStackTrace(stacktraceError, this.handleStreamOptions)
+    return { binds, queryOptions, stream, stacktrace: stacktraceError.stack }
   }
 
   stream<ReturnType = DefaultReturnType> (sql: string, options: StreamOptions): GenericReadable<ReturnType>
   stream<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: StreamOptions): GenericReadable<ReturnType>
   stream<ReturnType = DefaultReturnType> (sql: string, bindsOrOptions: any, options?: StreamOptions) {
-    const { binds, queryOptions, stream } = this.handleStreamOptions<ReturnType>(sql, bindsOrOptions, options)
-    this.feedStream(stream, sql, binds, queryOptions)
+    const { binds, queryOptions, stream, stacktrace } = this.handleStreamOptions<ReturnType>(sql, bindsOrOptions, options)
+    this.feedStream(stream, sql, binds, stacktrace, queryOptions)
     return stream
   }
 
@@ -234,9 +245,9 @@ export default class Db extends Queryable {
   stream<ReturnType = DefaultReturnType> (sql: string, options: StreamOptions): GenericReadable<ReturnType>
   stream<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: StreamOptions): GenericReadable<ReturnType>
   stream<ReturnType = DefaultReturnType> (sql: string, bindsOrOptions: any, options?: StreamOptions) {
-    const { binds, queryOptions, stream } = this.handleStreamOptions<ReturnType>(sql, bindsOrOptions, options)
+    const { binds, queryOptions, stream, stacktrace } = this.handleStreamOptions<ReturnType>(sql, bindsOrOptions, options)
     this.wait().then(() => {
-      this.feedStream(stream, sql, binds, queryOptions)
+      this.feedStream(stream, sql, binds, stacktrace, queryOptions)
     }).catch(e => stream.emit('error', e))
     return stream
   }

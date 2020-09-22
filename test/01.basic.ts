@@ -79,4 +79,13 @@ describe('basic tests', () => {
     const rows = await db.getall(`SELECT * FROM test WHERE name IN (${db.in(params, ['name 2', 'name 5'])}) OR name IN (${db.in(params, ['name 8', 'name 9'])})`, params)
     expect(rows).to.have.lengthOf(4)
   })
+
+  it('should show the library consumer in the error stacktrace when a query errors', async () => {
+    try {
+      await db.getval('SELECT blah FROM test')
+      expect(true).to.be.false('should have thrown for SQL error')
+    } catch (e) {
+      expect(e.stack).to.match(/01\.basic\.ts/)
+    }
+  })
 })
