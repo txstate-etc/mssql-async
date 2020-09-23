@@ -128,17 +128,25 @@ Another available approach is to use the iterator pattern directly. This is a st
 that you would receive from anything that supports the async iterator pattern. Probably to be avoided unless
 you are working with multiple result sets at the same time (e.g. syncing two tables).
 ```javascript
-const iterator = db.iterator('SELECT name FROM mytable')
+const iterator1 = db.iterator('SELECT name FROM mytable')
+const iterator2 = db.iterator('SELECT * FROM anothertable')
 while (true) {
-  const { value: row, done } = await iterator.next()
-  if (!done) {
-    // work on the row
+  const { value: row1, done1 } = await iterator1.next()
+  const { value: row2, done2 } = await iterator2.next()
+  if (!done1 || !done2) {
+    try {
+      // do some work to sync the rows
+    } catch (e) {
+      await iterator1.return()
+      await iterator2.return()
+      throw e
+    }
   } else {
     break
   }
 }
 ```
-An iterator needs to be cleaned up when your code is aborted before reaching the end, or it will leak a connection. Remember to `await iterator.return()` if you are going to abandon the iterator, and inside `try {} finally {}` blocks in your row processing code. An SQL query error will show up on the first `await iterator.next()` and does not need to be cleaned up.
+As illustrated above, an iterator needs to be cleaned up when your code is aborted before reaching the end, or it will leak a connection. Remember to `await iterator.return()` if you are going to abandon the iterator, and inside try/catch/finally blocks in your row processing code. An SQL query error will show up on the first `await iterator.next()` and does not need to be cleaned up.
 ## Transactions
 A method is provided to support working inside a transaction. Since the core Db object is a mssql pool, you
 cannot send transaction commands without this method, as each command would end up on a different connection.
