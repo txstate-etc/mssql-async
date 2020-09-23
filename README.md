@@ -93,6 +93,20 @@ back whatever would have been returned by mssql.
 const result = await db.query('INSERT INTO mytable (name) VALUES (@name); UPDATE anothertable SET col1=@col1', { name: 'Mike', col1: 'Value' })
 const rowsUpdated = result.rowsUpdated[1]
 ```
+## IN helper
+Writing queries with `IN` operators can be a little complicated when using named parameters.
+A helper is provided that takes your existing bound parameters object and an array to be used for the `IN`.
+It generates the SQL while also mutating your existing bound parameters, so that you can easily use it inline.
+```javascript
+const binds = { author: authorid }
+const rows = db.getall(`
+  SELECT * FROM mytable
+  WHERE author = @author
+  AND (
+    genre IN (${db.in(binds, genres)}) OR
+    title IN (${db.in(binds, titles)})
+  )`, binds)
+```
 # Advanced Usage
 ## Streaming
 ### Async Iterable
