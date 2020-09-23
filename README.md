@@ -196,4 +196,12 @@ interface Book {
   isbn: string
 }
 const row = await db.getrow<Book>('SELECT id, title, isbn FROM books WHERE id=@id', { id: 5 })
+// `row` is a `Book`
+const rows = await db.getall<Book>('SELECT id, title, isbn FROM books')
+// `rows` is a `Book[]`
+const stream = db.stream<Book>('SELECT id, title, isbn FROM books')
+for await (const row of stream) {
+  // `row` is a `Book`
+}
+
 ```
