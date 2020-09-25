@@ -194,7 +194,7 @@ export default class Db extends Queryable {
       server: config?.server ?? process.env.MSSQL_HOST ?? process.env.DB_HOST ?? 'mssql',
       ...(domain ? { domain } : {}),
       user: config?.user ?? process.env.MSSQL_USER ?? process.env.DB_USER ?? 'sa',
-      password: config?.password ?? process.env.MSSQL_PASS ?? process.env.DB_PASS ?? 'Secret123',
+      password: config?.password ?? process.env.MSSQL_PASS ?? process.env.MSSQL_PASSWORD ?? process.env.DB_PASS ?? process.env.DB_PASSWORD ?? 'Secret123',
       database: config?.database ?? process.env.MSSQL_DATABASE ?? process.env.DB_DATABASE ?? 'default_database',
       port: config?.port ?? parseInt(process.env.MSSQL_PORT ?? process.env.DB_PORT ?? '1433'),
       pool: {
