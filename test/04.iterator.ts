@@ -23,7 +23,7 @@ describe('iterator tests', () => {
     try {
       await iter.next()
       expect(true).to.be.false('next() should have errored')
-    } catch (e) {
+    } catch (e: any) {
       expect(e.code).to.equal('EREQUEST')
     }
   })
@@ -48,7 +48,7 @@ describe('iterator tests', () => {
           const { done, value: row } = await iterator.next()
           if (done) break
         }
-      } catch (e) {
+      } catch (e: any) {
         // do nothing
       }
     }

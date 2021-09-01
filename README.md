@@ -46,6 +46,26 @@ async function main() {
 }
 main().catch(e => console.error(e))
 ```
+## TLS Encryption
+This library, along with the underlying mssql and tedious libraries, will request an encrypted connection to the
+server if the server allows it. Many servers, including the mssql dockerhub image, will agree to encryption but send
+a self-signed certificate by default, which the client will reject, causing your connection to fail. For servers like
+that, you can either trust the server's custom certificate authority (if it has one and you can get access to its
+public key) or you can trust the certificate blindly.
+
+### Specifying a trusted CA
+Provide the Certificate Authority (this is not the same as the server's self-signed cert) as a PEM string in
+the `MSSQL_SERVER_CA` environment variable, as a filepath in the `NODE_EXTRA_CA_CERTS` environment variable, or as
+part of creating a pool:
+```typescript
+const db = new Db({ options: { cryptoCredentialsDetails: { ca: fs.readFileSync('/myserverstrustedca.pem') } } })
+```
+### Trust server certificate blindly
+This is slightly better than unencrypted but not by much. You can do this by setting the `MSSQL_INSECURE` environment
+variable, or as part of creating a pool:
+```typescript
+const db = new Db({ options: { trustServerCertificate: true } })
+```
 
 ## CommonJS imports
 You must refer to `.default` when importing with `require`:
@@ -213,3 +233,14 @@ for await (const row of stream) {
 }
 
 ```
+## Upgrading to 2.0
+The version number bumped to 2.0 because mssql bumped from 6 to 7, presumably because of breaking changes. None of
+the automated tests failed, so the breaking changes are probably minimal.
+
+The one thing I did find is the new version seems to fail when the server provides a self signed certificate for
+TLS encryption. I'm guessing the old client defaulted to unencrypted unless the server forced encryption, and the
+new client defaults to encrypted instead. But when the client requests encryption and the server has only a
+self-signed certificate to offer, the client connection fails because its default is not to trust self-signed certs.
+In that case you may want to force it back to unencrypted mode. See the section on TLS encryption above.
+
+If your project connects successfully to the database after upgrade, this issue does not affect you.

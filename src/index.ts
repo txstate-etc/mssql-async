@@ -49,7 +49,7 @@ export class Queryable {
     try {
       const req = this.request(sql, binds, options)
       return await req.query<ReturnType>(sql)
-    } catch (e) {
+    } catch (e: any) {
       e.clientstack = e.stack
       e.stack = (new Error().stack ?? '')
       Error.captureStackTrace(e, this.query)
@@ -188,6 +188,12 @@ export default class Db extends Queryable {
     const pool = new ConnectionPool({
       ...config,
       options: {
+        trustServerCertificate: !!process.env.MSSQL_INSECURE,
+        ...(process.env.MSSQL_SERVER_CA ? {
+          cryptoCredentialsDetails: {
+            ca: process.env.MSSQL_SERVER_CA
+          }
+        } : {}),
         ...(config?.options),
         enableArithAbort: true
       },
@@ -212,8 +218,8 @@ export default class Db extends Queryable {
       try {
         await this.pool.connect()
         return
-      } catch (error) {
-        if (errorcount > 2) console.error(error.message)
+      } catch (e: any) {
+        if (errorcount > 2) console.error(e.message)
         errorcount++
         // sleep and try again
         if (errorcount > 1) console.log('Unable to connect to MSSQL database, trying again in 2 seconds.')
@@ -261,7 +267,7 @@ export default class Db extends Queryable {
       const ret = await callback(db)
       await transaction.commit()
       return ret
-    } catch (e) {
+    } catch (e: any) {
       if (e.number === 1205 && options?.retries) { // deadlock
         return await this.transaction(callback, { ...options, retries: options.retries - 1 })
       } else {

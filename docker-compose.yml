@@ -5,6 +5,7 @@ services:
       context: .
     environment:
       TZ: America/Chicago
+      MSSQL_INSECURE: 1
     depends_on:
       - mssql
   mssql:

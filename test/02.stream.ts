@@ -32,7 +32,7 @@ describe('streaming tests', () => {
         // do not expect to get this far
       }
       expect(true).to.be.false('for await should have errored')
-    } catch (e) {
+    } catch (e: any) {
       expect(e.code).to.equal('EREQUEST')
     }
   })
@@ -58,7 +58,7 @@ describe('streaming tests', () => {
           expect(row?.name).to.match(/name \d+/)
           throw new Error('Fail!')
         }
-      } catch (e) {
+      } catch (e: any) {
         expect(e.message).to.equal('Fail!')
         errorthrown = true
       }
@@ -76,7 +76,7 @@ describe('streaming tests', () => {
         for await (const row of stream) {
           expect(row?.name).to.match(/name \d+/)
         }
-      } catch (e) {
+      } catch (e: any) {
         errorthrown = true
       }
     }
@@ -94,7 +94,7 @@ describe('streaming tests', () => {
           expect(row?.name).to.match(/name \d+/)
           stream.destroy()
         }
-      } catch (e) {
+      } catch (e: any) {
         errorthrown = true
       }
     }
@@ -127,7 +127,7 @@ describe('streaming tests', () => {
           expect(row?.name).to.match(/name \d+/)
           break
         }
-      } catch (e) {
+      } catch (e: any) {
         errorthrown = true
       }
     }
@@ -155,7 +155,7 @@ describe('streaming tests', () => {
         expect(row).to.exist
       }
       expect(true).to.be.false('should have thrown for SQL error')
-    } catch (e) {
+    } catch (e: any) {
       expect(e.stack).to.match(/02\.stream\.ts/)
     }
   })
