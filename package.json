@@ -1,15 +1,28 @@
 {
   "name": "mssql-async",
-  "version": "2.0.0",
+  "version": "2.1.1",
   "description": "A wrapper for mssql for added convenience when working with async/await and inside docker containers.",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./lib/index.js",
+      "import": "./lib-esm/index.js"
+    },
+    "./db": {
+      "require": "./lib/db.js",
+      "import": "./lib-esm/db.js"
+    }
+  },
+  "types": "lib-esm/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "db": ["./lib/db.d.ts"]
+    }
+  },
   "scripts": {
-    "prepublishOnly": "echo 'Must use command npm run pub' && exit 1",
+    "prepublishOnly": "npm run build",
     "build": "rm -rf ./lib && tsc",
     "mocha": "mocha -r ts-node/register test/**/*.ts --exit",
-    "test": "./test.sh",
-    "pub": "npm run build && cp package.json ./lib/ && cp README.md ./lib/ && cp LICENSE ./lib/ && cd ./lib && npm publish --ignore-scripts"
+    "test": "./test.sh"
   },
   "devDependencies": {
     "@types/chai": "^4.2.12",
@@ -49,7 +62,7 @@
   },
   "homepage": "https://github.com/txstate-etc/mssql-async#readme",
   "files": [
-    "*.js",
-    "*.d.ts"
+    "lib/**/*",
+    "lib-esm/**/*"
   ]
 }

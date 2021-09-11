@@ -189,11 +189,13 @@ export default class Db extends Queryable {
       ...config,
       options: {
         trustServerCertificate: !!process.env.MSSQL_INSECURE,
-        ...(process.env.MSSQL_SERVER_CA ? {
-          cryptoCredentialsDetails: {
-            ca: process.env.MSSQL_SERVER_CA
-          }
-        } : {}),
+        ...(process.env.MSSQL_SERVER_CA
+          ? {
+              cryptoCredentialsDetails: {
+                ca: process.env.MSSQL_SERVER_CA
+              }
+            }
+          : {}),
         ...(config?.options),
         enableArithAbort: true
       },

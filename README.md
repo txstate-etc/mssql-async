@@ -70,10 +70,9 @@ const db = new Db({ options: { trustServerCertificate: true } })
 ## CommonJS imports
 You must refer to `.default` when importing with `require`:
 ```javascript
-const db = require('mssql-async/db').default // or
-const { default: db } = require('mssql-async/db') // or
-const Db = require('mssql-async').default // or
-const { default: Db } = require('mssql-async')
+const Db = require('mssql-async').default
+// or the instance created with environment variables (see above)
+const db = require('mssql-async/db').default
 ```
 
 # Basic Usage
