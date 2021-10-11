@@ -1,6 +1,6 @@
 {
   "name": "mssql-async",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "A wrapper for mssql for added convenience when working with async/await and inside docker containers.",
   "exports": {
     ".": {
@@ -12,7 +12,7 @@
       "import": "./lib-esm/db.js"
     }
   },
-  "types": "lib-esm/index.d.ts",
+  "types": "lib/index.d.ts",
   "typesVersions": {
     "*": {
       "db": ["./lib/db.d.ts"]

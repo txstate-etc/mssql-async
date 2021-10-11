@@ -188,7 +188,7 @@ export default class Db extends Queryable {
     const pool = new ConnectionPool({
       ...config,
       options: {
-        trustServerCertificate: !!process.env.MSSQL_INSECURE,
+        trustServerCertificate: !!process.env.MSSQL_INSECURE && process.env.MSSQL_INSECURE.toLocaleLowerCase() !== 'false',
         ...(process.env.MSSQL_SERVER_CA
           ? {
               cryptoCredentialsDetails: {
