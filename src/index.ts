@@ -197,7 +197,8 @@ export default class Db extends Queryable {
             }
           : {}),
         ...(config?.options),
-        enableArithAbort: true
+        enableArithAbort: true,
+        useUTC: config?.options?.useUTC ?? !(process.env.MSSQL_SKIP_UTC && process.env.MSSQL_SKIP_UTC !== 'false')
       },
       server: config?.server ?? process.env.MSSQL_HOST ?? process.env.DB_HOST ?? 'mssql',
       ...(domain ? { domain } : {}),
