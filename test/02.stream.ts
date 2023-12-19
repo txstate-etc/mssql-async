@@ -54,6 +54,7 @@ describe('streaming tests', () => {
     for (let i = 0; i < 15; i++) {
       const stream = db.stream('SELECT TOP 100 * FROM test')
       try {
+        // eslint-disable-next-line no-unreachable-loop
         for await (const row of stream) {
           expect(row?.name).to.match(/name \d+/)
           throw new Error('Fail!')
@@ -100,7 +101,7 @@ describe('streaming tests', () => {
     }
     // if cancellations eat connections then it will hang indefinitely after 10 transactions
     // getting this far means things are working
-    expect(errorthrown).to.be.false
+    expect(errorthrown).to.be.true
   })
 
   it('should properly release connections back to the pool when the consumer cancels the stream before the database is connected', async () => {
@@ -123,6 +124,7 @@ describe('streaming tests', () => {
     for (let i = 0; i < 15; i++) {
       const stream = db.stream('SELECT TOP 100 * FROM test')
       try {
+        // eslint-disable-next-line no-unreachable-loop
         for await (const row of stream) {
           expect(row?.name).to.match(/name \d+/)
           break

@@ -1,4 +1,5 @@
-import mssql, { ConnectionPool, Transaction } from 'mssql'
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+import mssql from 'mssql'
 import { Readable } from 'stream'
 
 export interface QueryOptions {
@@ -13,10 +14,11 @@ export interface StreamOptions extends QueryOptions {
 interface canBeStringed {
   toString: () => string
 }
+// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style
 interface BindObject { [keys: string]: BindParam }
-type BindParam = boolean|number|string|null|Date|Buffer|canBeStringed|BindObject
+type BindParam = boolean | number | string | null | Date | Buffer | canBeStringed | BindObject
 type ColTypes = BindParam
-interface DefaultReturnType { [keys: string]: ColTypes }
+type DefaultReturnType = Record<string, ColTypes>
 type BindInput = BindObject
 
 interface StreamIterator <ReturnType> {
@@ -30,9 +32,9 @@ interface GenericReadable<T> extends Readable {
 }
 
 export class Queryable {
-  protected conn: ConnectionPool | Transaction
+  protected conn: mssql.ConnectionPool | mssql.Transaction
 
-  constructor (conn: ConnectionPool | Transaction, connectpromise?: Promise<void>) {
+  constructor (conn: mssql.ConnectionPool | mssql.Transaction, connectpromise?: Promise<void>) {
     this.conn = conn
   }
 
@@ -52,6 +54,7 @@ export class Queryable {
     } catch (e: any) {
       e.clientstack = e.stack
       e.stack = (new Error().stack ?? '')
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       Error.captureStackTrace(e, this.query)
       throw e
     }
@@ -74,7 +77,7 @@ export class Queryable {
 
   async getall<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: QueryOptions) {
     const results = await this.query<ReturnType>(sql, binds, options)
-    return results.recordset
+    return results.recordset as ReturnType[]
   }
 
   async execute (sql: string, binds?: BindInput, options?: QueryOptions) {
@@ -88,10 +91,10 @@ export class Queryable {
   }
 
   async insert (sql: string, binds?: BindInput, options?: QueryOptions) {
-    return await this.getval<number>(sql + '; SELECT SCOPE_IDENTITY() AS id', binds, options) as number
+    return (await this.getval<number>(sql + '; SELECT SCOPE_IDENTITY() AS id', binds, options))!
   }
 
-  protected feedStream<ReturnType> (stream: GenericReadable<ReturnType>, sql: string, binds: BindInput, stacktrace: string|undefined, options: QueryOptions = {}) {
+  protected feedStream<ReturnType> (stream: GenericReadable<ReturnType>, sql: string, binds: BindInput, stacktrace: string | undefined, options: QueryOptions = {}) {
     if (stream.destroyed) return
 
     const req = this.request(sql, binds, options)
@@ -150,6 +153,7 @@ export class Queryable {
       cb()
     }
     const stacktraceError: { stack?: string } = {}
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     Error.captureStackTrace(stacktraceError, this.handleStreamOptions)
     return { binds, queryOptions, stream, stacktrace: stacktraceError.stack }
   }
@@ -179,13 +183,13 @@ export class Queryable {
 }
 
 export default class Db extends Queryable {
-  protected pool: ConnectionPool
+  protected pool: mssql.ConnectionPool
   protected connectpromise!: Promise<void>
 
   constructor (config?: Partial<mssql.config>) {
     const poolSizeString = process.env.MSSQL_POOL_SIZE ?? process.env.DB_POOL_SIZE
     const domain = config?.domain ?? process.env.MSSQL_DOMAIN ?? process.env.DB_DOMAIN
-    const pool = new ConnectionPool({
+    const pool = new mssql.ConnectionPool({
       ...config,
       options: {
         trustServerCertificate: !!process.env.MSSQL_INSECURE && process.env.MSSQL_INSECURE.toLocaleLowerCase() !== 'false',
@@ -243,7 +247,7 @@ export default class Db extends Queryable {
 
   async wait () {
     if (typeof this.connectpromise === 'undefined') this.connectpromise = this.connect()
-    return await this.connectpromise
+    await this.connectpromise
   }
 
   async query<ReturnType = DefaultReturnType> (sql: string, binds?: BindInput, options?: QueryOptions) {
