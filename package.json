@@ -1,13 +1,15 @@
 {
   "name": "mssql-async",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "A wrapper for mssql for added convenience when working with async/await and inside docker containers.",
   "exports": {
     ".": {
+      "types": "./lib-esm/index.d.ts",
       "require": "./lib/index.js",
       "import": "./lib-esm/index.js"
     },
     "./db": {
+      "types": "./lib-esm/db.d.ts",
       "require": "./lib/db.js",
       "import": "./lib-esm/db.js"
     }
@@ -15,12 +17,12 @@
   "types": "lib/index.d.ts",
   "typesVersions": {
     "*": {
-      "db": ["./lib/db.d.ts"]
+      "db": ["./lib-esm/db.d.ts"]
     }
   },
   "scripts": {
     "prepublishOnly": "npm run build",
-    "build": "rm -rf ./lib && tsc",
+    "build": "rm -rf ./lib && tsc && mv lib/*.d.ts lib-esm/",
     "mocha": "mocha -r ts-node/register test/**/*.ts --exit",
     "lint": "eslint --ignore-path .gitignore ./src/**/*.ts ./test/**/*.ts",
     "test": "./test.sh"
