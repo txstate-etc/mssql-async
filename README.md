@@ -35,6 +35,7 @@ environment variables:
   MSSQL_USER (default 'sa')
   MSSQL_PASS
   MSSQL_POOL_SIZE (default is mssql's default)
+  MSSQL_DOMAIN
 ```
 This way, connecting is very simple, and you don't have to worry about creating a singleton pool for the
 rest of your codebase to import:
