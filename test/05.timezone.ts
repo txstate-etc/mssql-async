@@ -9,7 +9,8 @@ function expectSameTime (date1: Date, date2: Date) {
 
 describe('timezone tests', () => {
   it('should automatically generate dates in UTC', async () => {
-    const tz = await db.getval<Date>('SELECT TOP 1 modified FROM test')
+    const id = await db.insert('INSERT INTO test (name, modified) VALUES (@name, GETUTCDATE())', { name: 'timezone test' })
+    const tz = await db.getval<Date>('SELECT modified FROM test WHERE id=@id', { id })
     expect(tz).to.be.a('Date')
     expectSameTime(tz!, new Date())
   })
